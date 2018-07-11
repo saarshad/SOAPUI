@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="0388aa20-9d36-47f8-a8d0-68703524bb81" activeEnvironment="Default" name="OrderNextMobilisation_IIB_POD_Processing" resourceRoot="" soapui-version="5.4.0" abortOnError="false" runType="SEQUENTIAL" xmlns:con="http://eviware.com/soapui/config"><con:settings/><con:testSuite id="18c029f1-7a84-4cd7-aae6-0f61abf06c80" name="TestSuite"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="1149405c-e6c6-45fa-93d2-ebe6cd5ecbbd" failOnError="false" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TC_CreateOrder_and_Verify_DB" searchProperties="true" timeout="0" wsrmEnabled="false" wsrmVersion="1.0" wsrmAckTo="" amfAuthorisation="false" amfEndpoint="" amfLogin="" amfPassword=""><con:settings/><con:testStep type="groovy" name="Clean_Up" id="e45a15b1-2ad0-405e-8b33-93f91408fe5e"><con:settings/><con:config><script>/*def SubmitResponse = new File(/C:\SOAPUI\mq\CreateOrderTest\SubmitResponse.txt/);
+SubmitResponse.delete();
+def MQExceptionGet = new File(/C:\SOAPUI\mq\CreateOrderTest\MQExceptionGet.bat/);
+MQExceptionGet.delete();
+def MQExceptionGetResponse = new File(/C:\SOAPUI\mq\CreateOrder\MQExceptionGetResponse.xml/);
+MQExceptionGetResponse.delete(); */</script></con:config></con:testStep><con:testStep type="groovy" name="CreatePropertiesFile" id="5adba5d1-b776-4889-83f8-f9962436778a"><con:settings/><con:config><script>log.info " CreatePropertiesFile Step Started"
+Process proc=Runtime.getRuntime().exec("cmd /c start C:\\SOAPUI\\mq\\CreateOrderTest\\TriggerCreatePropertiesFile.bat");
+if(proc.waitFor() != 0){
+	println("ERROR");
+}
+else {
+	log.info " Properties File Created"
+}
+log.info " CreatePropertiesFile Step Finished"
+
+</script></con:config></con:testStep><con:testStep type="delay" name="WaitForPropertyFileToBeUpdated" id="52f52fe0-fb83-4da6-9629-13ae7ab0f1f7"><con:settings/><con:config><delay>7000</delay></con:config></con:testStep><con:testStep type="properties" name="Properties" id="65494848-cd42-44ca-a636-cb0ad575d828"><con:settings/><con:config xsi:type="con:PropertiesStep" saveFirst="false" createMissingOnLoad="true" discardValuesOnSave="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:source>C:/SOAPUI/mq/CreateOrderTest/ExpectedOrderNumber.txt</con:source><con:target>C:/SOAPUI/mq/CreateOrderTest/ExpectedOrderNumberFinal</con:target><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000003 </con:value></con:property></con:properties></con:config></con:testStep><con:testStep type="transfer" name="Property Transfer" id="68a44396-b44c-421d-b3f4-5497cf19b3c9"><con:settings/><con:config xsi:type="con:PropertyTransfersStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:transfers setNullOnMissingSource="true" transferTextContent="true" failOnError="true" ignoreEmpty="false" transferToAll="false" entitize="false" transferChildNodes="false"><con:name>TransferOrderNumber</con:name><con:sourceType>mfOrderNo</con:sourceType><con:sourceStep>Properties</con:sourceStep><con:targetType>mfOrderNo</con:targetType><con:targetStep>db2DeleteOrderIfAlreadyExists</con:targetStep><con:upgraded>true</con:upgraded></con:transfers></con:config></con:testStep><con:testStep type="jdbc" name="db2DeleteOrderIfAlreadyExists" id="53d2e8c3-5ebd-4523-869b-bf8136f5f77c"><con:settings/><con:config xsi:type="con:JdbcRequestTestStep" convertColumnNamesToUpperCase="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:driver>com.ibm.db2.jcc.DB2Driver</con:driver><con:connectionString>jdbc:db2://dishaiib:50000/Order_01:user=db2admin;password=db2admin;</con:connectionString><con:query>call sp_del_ago_vor_veh_1(:mfOrderNo)</con:query><con:assertion type="Simple Contains" id="ddd6aa3f-cd0b-4eb1-8c0b-18627a9baff2" name="Contains"><con:configuration><token/><ignoreCase>false</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000003 </con:value></con:property></con:properties></con:config></con:testStep><con:testStep type="delay" name="Wait" id="ed547e36-7e79-41f2-a202-88b038ac42e8"><con:settings/><con:config><delay>7000</delay></con:config></con:testStep><con:testStep type="groovy" name="SubmitMessageToMQ" id="33b97083-1661-4903-aec8-0785946702b7"><con:settings/><con:config><script>log.info " SubmitMessageToIBMMQ Step Started"
+Process proc=Runtime.getRuntime().exec("cmd /c start C:\\SOAPUI\\mq\\CreateOrderTest\\pushMessageToIBMMQ.bat");
+if(proc.waitFor() != 0){
+	println("ERROR");
+}
+else {
+	println("PASSED");
+	log.info " XML file submitted to IBM MQ Queue"
+}
+log.info " SubmitMessageToIBMMQ Step Finished"
+</script></con:config></con:testStep><con:testStep type="groovy" name="SubmitMessageToMQResponse_Check" id="15f688ba-9386-48cb-ad6c-d4b831779e6c"><con:settings/><con:config><script>File f = new File("C:/SOAPUI/mq/CreateOrderTest/SubmitResponse.txt")
+
+if (f.length() == 0){
+	testRunner.fail(" SubmitResponse.txt returned as empty."	)
+}
+else {
+	log.info " Submit Message returned success."
+}</script></con:config></con:testStep><con:testStep type="delay" name="WaitForIIBToCreateOrder" id="b4c08888-7a80-40db-bf1a-8039049870e5"><con:settings/><con:config><delay>10000</delay></con:config></con:testStep><con:testStep type="groovy" name="RecursiveDBRecordCheck" id="399bcfb6-ed28-4a4e-8f37-3d0c5b337d0e"><con:settings/><con:config><script>import com.eviware.soapui.model.testsuite.TestStepResult.TestStepStatus
+import com.eviware.soapui.support.XmlHolder
+log.info ""
+log.info " STARTED - Recursive Script To Trigger Database Record Check."
+def loop = 1
+
+myTestStepResult = testRunner.runTestStepByName("db2RecordCheck")
+def ResponseType = testRunner.testCase.testSteps["db2RecordCheck"].testRequest.response.getContentAsXml()
+def xml = new XmlHolder(ResponseType)
+// def countValue = 0
+int countValue = Integer.parseInt(xml.getNodeValue("//*:COUNT"))
+// log.info "countvalue"
+// log.info countValue
+if (countValue == 1){
+	log.info " FOUND RECORD, following " + loop + " attempts."
+}
+else 
+{
+	log.info " CANNOT Find Record: Attempt:- " + loop
+	while (loop &lt; 7)
+	{
+		myTestStepResult = testRunner.runTestStepByName("db2RecordCheck")
+		ResponseType = testRunner.testCase.testSteps["db2RecordCheck"].testRequest.response.getContentAsXml()
+		xml = new XmlHolder(ResponseType)
+		countValue = Integer.parseInt(xml.getNodeValue("//*:COUNT"))
+	//	log.info "inside while countvalue"
+	//	log.info countValue
+		if (countValue == 1){
+			log.info " FOUND RECORD, following " + loop + " attempts."
+			break;
+		} 
+		else {
+			loop = loop + 1
+			log.info " CANNOT Find Record: Attempt:- " + loop
+			sleep(4000)
+		}
+	}
+	if (countValue == 0) {
+		log.error " Time Expired.  No Record Found. After " + loop + " attempts."		
+		testRunner.fail(" Time Expired.  No Record Found. After " + loop + " attempts."	)
+	}
+ }
+log.info " END - Recursive Script To Trigger Database Record Check."</script></con:config></con:testStep><con:testStep type="jdbc" name="db2RecordCheck" id="0352f64b-65e9-4998-be0b-312096795a3f" disabled="true"><con:settings/><con:config xsi:type="con:JdbcRequestTestStep" convertColumnNamesToUpperCase="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:driver>com.ibm.db2.jcc.DB2Driver</con:driver><con:connectionString>jdbc:db2://dishaiib:50000/Order_01:user=db2admin;password=db2admin;</con:connectionString><con:query>SELECT COUNT(*) AS COUNT
+FROM 
+TVZAGO 
+WHERE 
+AG_ORDER_NUM = :mfOrderNo</con:query><con:assertion type="Simple Contains" id="ddd6aa3f-cd0b-4eb1-8c0b-18627a9baff2" name="Contains"><con:configuration><token/><ignoreCase>false</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000003 </con:value></con:property></con:properties></con:config></con:testStep><con:properties/></con:testCase><con:properties/></con:testSuite><con:testSuite id="45c54806-6042-4370-b06f-00e41bbfaa4f" name="TestSuite_Create_Order_Invalid_Dealer"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="4d4e5df0-7405-4c5e-b471-fc63ea32966b" failOnError="false" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="CreateOrder_With_Invalid_DealerID" searchProperties="true" timeout="0" wsrmEnabled="false" wsrmVersion="1.0" wsrmAckTo="" amfAuthorisation="false" amfEndpoint="" amfLogin="" amfPassword=""><con:settings/><con:testStep type="groovy" name="Clean_Up" id="1a679dd5-8a09-4aa5-8fcd-1ac01f8c8977"><con:settings/><con:config><script>def SubmitResponse = new File(/C:\SOAPUI\mq\CreateOrderTest_Invalid_Dealer\SubmitResponse.txt/);
+SubmitResponse.delete();
+def MQExceptionGet = new File(/C:\SOAPUI\mq\CreateOrderTest_Invalid_Dealer\MQExceptionGet.bat/);
+MQExceptionGet.delete();
+def MQExceptionGetResponse = new File(/C:\SOAPUI\mq\CreateOrderTest_Invalid_Dealer\MQExceptionGetResponse.xml/);
+MQExceptionGetResponse.delete();</script></con:config></con:testStep><con:testStep type="groovy" name="CreatePropertiesFile" id="cf5f709c-183c-4d86-899f-c9cd69414ed4"><con:settings/><con:config><script>log.info " CreatePropertiesFile Step Started"
+Process proc=Runtime.getRuntime().exec("cmd /c start C:\\SOAPUI\\mq\\CreateOrderTest_Invalid_Dealer\\TriggerCreatePropertiesFile.bat");
+if(proc.waitFor() != 0){
+	println("ERROR");
+}
+else {
+	log.info " Properties File Created"
+}
+log.info " CreatePropertiesFile Step Finished"
+
+</script></con:config></con:testStep><con:testStep type="delay" name="WaitForPropertyFileToBeUpdated" id="e9d3f299-96e9-4f75-b3f1-451d1e09da09"><con:settings/><con:config><delay>7000</delay></con:config></con:testStep><con:testStep type="properties" name="Properties" id="a0a28e86-e918-4b67-bc06-e0243ac73e76"><con:settings/><con:config xsi:type="con:PropertiesStep" saveFirst="false" createMissingOnLoad="true" discardValuesOnSave="false" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:source>C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/ExpectedOrderNumber.txt</con:source><con:target>C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/ExpectedOrderNumberFinal</con:target><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000006 </con:value></con:property></con:properties></con:config></con:testStep><con:testStep type="transfer" name="Property Transfer" id="8c2a90f6-6e37-4960-9664-67ca2842791a"><con:settings/><con:config xsi:type="con:PropertyTransfersStep" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:transfers setNullOnMissingSource="true" transferTextContent="true" failOnError="true" ignoreEmpty="false" transferToAll="false" entitize="false" transferChildNodes="false"><con:name>TransferOrderNumber</con:name><con:sourceType>mfOrderNo</con:sourceType><con:sourceStep>Properties</con:sourceStep><con:targetType>mfOrderNo</con:targetType><con:targetStep>db2DeleteOrderIfAlreadyExists</con:targetStep><con:upgraded>true</con:upgraded></con:transfers></con:config></con:testStep><con:testStep type="jdbc" name="db2DeleteOrderIfAlreadyExists" id="c065f85a-1552-42c8-ac97-5a49d1aedc14"><con:settings/><con:config xsi:type="con:JdbcRequestTestStep" convertColumnNamesToUpperCase="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:driver>com.ibm.db2.jcc.DB2Driver</con:driver><con:connectionString>jdbc:db2://dishaiib:50000/Order_01:user=db2admin;password=db2admin;</con:connectionString><con:query>call sp_del_ago_vor_veh_1(:mfOrderNo)</con:query><con:assertion type="Simple Contains" id="ddd6aa3f-cd0b-4eb1-8c0b-18627a9baff2" name="Contains"><con:configuration><token/><ignoreCase>false</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000006 </con:value></con:property></con:properties></con:config></con:testStep><con:testStep type="delay" name="Wait" id="9a93c3b9-e57a-4159-9bcf-ed60d9009c72"><con:settings/><con:config><delay>7000</delay></con:config></con:testStep><con:testStep type="groovy" name="SubmitMessageToMQ" id="7d41e316-8139-4f20-9b01-4b354a4fb9ac"><con:settings/><con:config><script>log.info " SubmitMessageToIBMMQ Step Started"
+Process proc=Runtime.getRuntime().exec("cmd /c start C:\\SOAPUI\\mq\\CreateOrderTest_Invalid_Dealer\\pushMessageToIBMMQ.bat");
+if(proc.waitFor() != 0){
+	println("ERROR");
+}
+else {
+	println("PASSED");
+	log.info " XML file submitted to IBM MQ Queue"
+}
+log.info " SubmitMessageToIBMMQ Step Finished"
+</script></con:config></con:testStep><con:testStep type="delay" name="Delay" id="b5abd108-1cc9-4226-9bca-95e199008e6a"><con:settings/><con:config><delay>4000</delay></con:config></con:testStep><con:testStep type="groovy" name="SubmitMessageToMQResponse_Check" id="c5d7d1c5-e702-4a32-bdfb-774abfac8391"><con:settings/><con:config><script>File f = new File("C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/SubmitResponse.txt")
+
+if (f.length() == 0){
+	testRunner.fail(" SubmitResponse.txt returned as empty."	)
+}
+else {
+	log.info " Submit Message returned success."
+}</script></con:config></con:testStep><con:testStep type="delay" name="WaitForIIBToCreateOrder" id="97ee7d28-c36c-46b7-82df-eb070c2afc5d"><con:settings/><con:config><delay>10000</delay></con:config></con:testStep><con:testStep type="groovy" name="RecursiveDBRecordCheck" id="425b2e37-94ce-44d3-a865-861b4c07f6ab"><con:settings/><con:config><script>import com.eviware.soapui.model.testsuite.TestStepResult.TestStepStatus
+import com.eviware.soapui.support.XmlHolder
+log.info ""
+log.info " STARTED - Recursive Script To Trigger Database Record Check."
+def loop = 1
+
+myTestStepResult = testRunner.runTestStepByName("db2RecordCheck")
+def ResponseType = testRunner.testCase.testSteps["db2RecordCheck"].testRequest.response.getContentAsXml()
+def xml = new XmlHolder(ResponseType)
+// def countValue = 0
+int countValue = Integer.parseInt(xml.getNodeValue("//*:COUNT"))
+// log.info "countvalue"
+log.info countValue
+if (countValue == 1){
+	log.info " Record Created In Order Table.  Test Failed, following " + loop + " attempts."
+	testRunner.fail(" Record Created In Order Table.  Test Failed, following " + loop + " attempts.")
+}
+else
+{
+	log.info " Record NOT Created In Order Table, following " + loop + " attempts."
+	while (loop &lt; 4)
+	{
+		myTestStepResult = testRunner.runTestStepByName("db2RecordCheck")
+		ResponseType = testRunner.testCase.testSteps["db2RecordCheck"].testRequest.response.getContentAsXml()
+		xml = new XmlHolder(ResponseType)
+		countValue = Integer.parseInt(xml.getNodeValue("//*:COUNT"))
+		if (countValue == 1){
+			log.info " Record Created In Order Table.  Test Failed, following " + loop + " attempts."
+			testRunner.fail(" Record Created In Order Table.  Test Failed, following " + loop + " attempts.")
+			break;
+		} 
+		else {
+			loop = loop + 1
+			log.info " Record NOT Created In Order Table, following " + loop + " attempts."
+			sleep(4000)
+		}
+	}
+}
+if (countValue == 0) {
+	log.info " Record Not Inserted as expected, after checking Database following " + loop + " attempts."
+}
+</script></con:config></con:testStep><con:testStep type="jdbc" name="db2RecordCheck" id="10153454-135a-4117-af1d-1d8df71e0ee3" disabled="true"><con:settings/><con:config xsi:type="con:JdbcRequestTestStep" convertColumnNamesToUpperCase="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:driver>com.ibm.db2.jcc.DB2Driver</con:driver><con:connectionString>jdbc:db2://dishaiib:50000/Order_01:user=db2admin;password=db2admin;</con:connectionString><con:query>SELECT COUNT(*) AS COUNT
+FROM 
+TVZAGO 
+WHERE 
+AG_ORDER_NUM = :mfOrderNo</con:query><con:assertion type="Simple Contains" id="ddd6aa3f-cd0b-4eb1-8c0b-18627a9baff2" name="Contains"><con:configuration><token/><ignoreCase>false</ignoreCase><useRegEx>false</useRegEx></con:configuration></con:assertion><con:properties><con:property><con:name>mfOrderNo</con:name><con:value>1000006 </con:value></con:property></con:properties></con:config></con:testStep><con:testStep type="groovy" name="CreateMQErrorQueueGet" id="f83f9465-af95-4a2a-9dee-0bb41ee308c1"><con:settings/><con:config><script>import java.io.File
+log.info " CreateMQErrorGetFile Step Started"
+myFile = new File("C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/SubmitResponse.txt");
+// log.info "Line 2: " +  myFile.readLines().get(2)
+
+String myline =  myFile.readLines().get(2);
+String CorrelationID = myline.substring(27, 63);
+
+f = new File('C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/MQExceptionGet.bat')
+f.write('c:')
+f.append(System.getProperty("line.separator"))
+f.append('cd C:\\SOAPUI\\mq\\')
+f.append(System.getProperty("line.separator"))
+f.append('java -jar C:\\SOAPUI\\mq\\jars\\MQMessageRunner.jar -m b -h dishaiib -qm QM01 -q BMW.OrderNext.POD.ERROR -cr ' + CorrelationID + ' > C:\\SOAPUI\\mq\\CreateOrderTest_Invalid_Dealer\\MQExceptionGetResponse.xml')
+f.append(System.getProperty("line.separator"))
+f.append('exit')
+log.info " CreateMQErrorGetFile Step Finished"
+</script></con:config></con:testStep><con:testStep type="delay" name="Delay 1" id="3f4001e5-dc80-41e3-93a1-7d4e23a20e02"><con:settings/><con:config><delay>3000</delay></con:config></con:testStep><con:testStep type="groovy" name="GetErrorMessageFromMQ" id="69cdff16-0867-4e5f-8fef-ee4bc6fc2de9"><con:settings/><con:config><script>log.info " Retrieve Error Message Step Started"
+Process proc=Runtime.getRuntime().exec("cmd /c start C:\\SOAPUI\\mq\\CreateOrderTest_Invalid_Dealer\\MQExceptionGet.bat");
+
+</script></con:config></con:testStep><con:testStep type="delay" name="Delay 2" id="5e3e2641-74d0-4b16-bc00-e334e49c9b3c"><con:settings/><con:config><delay>3000</delay></con:config></con:testStep><con:testStep type="groovy" name="GetErrorMessageFromMQResponse_Check" id="a36920eb-8b86-486c-843e-73d4228b417e"><con:settings/><con:config><script>import java.io.File
+log.info " CreateMQErrorGetFile Step Started"
+myFile = new File("C:/SOAPUI/mq/CreateOrderTest_Invalid_Dealer/MQExceptionGetResponse.xml");
+// log.info "Line 2: " +  myFile.readLines().get(2)
+
+String myline =  myFile.readLines().get(4);
+log.info(myline);
+if (myline.contains("Exception Occured with Error Code :: 100")) 
+{
+	log.info "ERROR CODE Returned that Exception has Occurred.";
+} 
+else 
+{
+	log.info "";
+	testRunner.fail("ERROR CODE Returned that Exception has NOT Occurred.  Test Failed.")
+}
+
+if (myline.contains("FETCH TVZDLR CURSOR FOR DLR_NUM WHERE DLR_NUM")) 
+{
+	log.info "ERROR CODE Returned does contain INVALID DEALER Response.";
+} 
+else 
+{
+	log.info "";
+	testRunner.fail("ERROR CODE Returned does not contain INVALID DEALER ID. Test Failed.")
+}
+//log.info myline;</script></con:config></con:testStep><con:properties/></con:testCase><con:properties/></con:testSuite><con:properties/><con:wssContainer/><con:oAuth2ProfileContainer/><con:oAuth1ProfileContainer/><con:sensitiveInformation/></con:soapui-project>
